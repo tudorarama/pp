@@ -1,6 +1,6 @@
 //import libraria principala polyglot din graalvm
 import org.graalvm.polyglot.*;
-
+import java.util.*;
 //clasa principala - aplicatie JAVA
 class Polyglot {
     //metoda privata pentru conversie low-case -> up-case folosind functia toupper() din R
@@ -26,7 +26,13 @@ class Polyglot {
         //avem voie sa inlocuim anumite elemente din scriptul pe care il construim spre evaluare, aici token provine din JAVA, dar va fi interpretat de PYTHON
 
         //Cerinta 2
-        token = token.substring(1 , token.length() - 1);
+
+        if(token.length()  >=2 ){
+            token = token.substring(1 , token.length() - 1);
+        } else {
+            token ="";
+        }
+
 
 
         //Cerinta 1
@@ -52,17 +58,45 @@ class Polyglot {
         Context polyglot = Context.create();
         //construim un array de string-uri, folosind cuvinte din pagina web:  https://chrisseaton.com/truffleruby/tenthings/
         Value array = polyglot.eval("js", "[\"If\",\"we\",\"run\",\"the\",\"java\",\"command\",\"included\",\"in\",\"GraalVM\",\"we\",\"will\",\"be\",\"automatically\",\"using\",\"the\",\"Graal\",\"JIT\",\"compiler\",\"no\",\"extra\",\"configuration\",\"is\",\"needed\",\"I\",\"will\",\"use\",\"the\",\"time\",\"command\",\"to\",\"get\",\"the\",\"real\",\"wall\",\"clock\",\"elapsed\",\"time\",\"it\",\"takes\",\"to\",\"run\",\"the\",\"entire\",\"program\",\"from\",\"start\",\"to\",\"finish\",\"rather\",\"than\",\"setting\",\"up\",\"a\",\"complicated\",\"micro\",\"benchmark\",\"and\",\"I\",\"will\",\"use\",\"a\",\"large\",\"input\",\"so\",\"that\",\"we\",\"arent\",\"quibbling\",\"about\",\"a\",\"few\",\"seconds\",\"here\",\"or\",\"there\",\"The\",\"large.txt\",\"file\",\"is\",\"150\",\"MB\"];");
+
+
+        //Cream HashMap pt cuvinte , vom folosi ca hash key suma CRC
+        Map<Long, List<String>> grupuriCRC = new HashMap<>();
+
         //pentru fiecare cuvant, convertim la upcase folosind R si calculam suma de control folosind PYTHON
+
+
         for (int i = 0; i < array.getArraySize();i++){
             String element = array.getArrayElement(i).asString();
             String upper = RToUpper(element);
             long  crc = SumCRC(upper);
+
+            //adaugam in HashMap
+            grupuriCRC.putIfAbsent(crc, new ArrayList<>());
+            grupuriCRC.get(crc).add(upper);
+
+
             System.out.println(upper + " -> " + crc);
         }
 
         System.out.println("Afisare cuvintele cu aceasi suma de control : ");
 
+        boolean gasit = false;
+        for(Map.Entry<Long , List<String>> entry: grupuriCRC.entrySet() ){
+        //daca avem mai mult de 1 , exista coliziuni
 
+            if(entry.getValue().size() > 1){
+                System.out.println("Suma " + entry.getKey() + ":"+ entry.getValue() );
+                gasit =  true;
+
+            }
+
+        }
+
+        if(!gasit){
+            System.out.println("Nu s-au gasit cuvinte cu aceasi suma de ocntrol.");
+
+        }
 
 
         // inchidem contextul Polyglot
